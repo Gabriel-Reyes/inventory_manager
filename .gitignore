@@ -1,4 +1,5 @@
 Inventory Manager/service_acct.json
 .DS_Store
-Inventory Manager/setup.cpython-38.pyc
 Inventory Manager/setup.py
+Inventory Manager/__pycache__/setup.cpython-38.pyc
+.vscode/.ropeproject/config.py

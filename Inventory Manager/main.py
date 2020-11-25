@@ -447,7 +447,7 @@ for df in master_dfs:
     df['7_day_trend'] = df['7_day_trend'].replace([np.inf, -np.inf], np.nan).round(1)
 
     # add last 3 month YoY trend
-    df['last_3_months_YoY'] = (((df[month_sbtrkt(-1)] +
+    df['last_3_months_YoY'] = np.clip((((df[month_sbtrkt(-1)] +
                                  df[month_sbtrkt(-2)] +
                                  df[month_sbtrkt(-3)]) -
                                     (df[month_sbtrkt(-13)] +
@@ -455,7 +455,7 @@ for df in master_dfs:
                                      df[month_sbtrkt(-15)])) /
                                         (df[month_sbtrkt(-13)] +
                                          df[month_sbtrkt(-14)] +
-                                         df[month_sbtrkt(-15)])).replace([np.inf, -np.inf], np.nan).round(2)
+                                         df[month_sbtrkt(-15)])).replace([np.inf, -np.inf], np.nan).round(2), -1, 1)
 
     # add estimator for current month total sales
     df['projected_sales_current_month'] = (df['cases_sold_this_month'] /
@@ -472,15 +472,44 @@ vaw1_pred = vaw1_master.join(depletion_estimator_6mons(vaw1_master))
 
 
 # add future cases on hand estimators for upcoming months
-global_final = global_pred.join(cases_oh_estimator_mains(global_pred, 'Cases_On_Hand__c', 'Next_Drop_Date__c', 'Cases__c'))
-sbc1_final = sbc1_pred.join(cases_oh_estimator_mains(sbc1_pred, 'SBC_Cases_OH__c', 'Next_Drop_Date__c', 'Cases__c'))
-caw1_final = caw1_pred.join(cases_oh_estimator_secondary(caw1_pred, 'CA_Cases_OH__c'))
-ill1_final = ill1_pred.join(cases_oh_estimator_secondary(ill1_pred, 'ILL_Cases_OH__c'))
-vaw1_final = vaw1_pred.join(cases_oh_estimator_secondary(vaw1_pred, 'VA_Cases_OH__c'))
+global_oh = global_pred.join(cases_oh_estimator_mains(global_pred, 'Cases_On_Hand__c', 'Next_Drop_Date__c', 'Cases__c'))
+sbc1_oh = sbc1_pred.join(cases_oh_estimator_mains(sbc1_pred, 'SBC_Cases_OH__c', 'Next_Drop_Date__c', 'Cases__c'))
+caw1_oh = caw1_pred.join(cases_oh_estimator_secondary(caw1_pred, 'CA_Cases_OH__c'))
+ill1_oh = ill1_pred.join(cases_oh_estimator_secondary(ill1_pred, 'ILL_Cases_OH__c'))
+vaw1_oh = vaw1_pred.join(cases_oh_estimator_secondary(vaw1_pred, 'VA_Cases_OH__c'))
 
-gc = gs.service_account(filename='service_acct.json')
+# selecting final columns for each warehouse report
 
-spreadsheet = gc.open_by_key('1qy2QqWN6C9df5K7hEh8hwDfG-CP2bnveoXyuLdzKeKY')
+global_cols = ['ProductCode', 'Description', 'Current_Vintage__c', 'Country__c', 'Size__c', 'Bt_Cs__c', 'Item_Cost_SBC__c', 'Cases_On_Hand__c', 'Total_Committed_Cases__c', 'Total_Inv_Value__c', 'SBC_Cases_on_Order__c', 'Cases__c', 'Next_Drop_Date__c',
+month_sbtrkt(-13), month_sbtrkt(-12), month_sbtrkt(-11), 'cases_sold_t120-t90', 'cases_sold_t90-t60', 'cases_sold_t60-t30',
+'cases_sold_t30', 'cases_sold_t7', 'last_3_months_YoY', '30_day_trend', '7_day_trend', 'OH_months_inventory', 'projected_sales_current_month', ('forecast:', month_namer(1)), ('forecast:', month_namer(2)), ('forecast:', month_namer(3)),('Estimated Cases OH', month_namer(1)), ('Estimated Cases OH', month_namer(2)), ('Estimated Cases OH', month_namer(3)), ('Estimated Cases OH', month_namer(4))]
+
+sbc1_cols = ['ProductCode', 'Description', 'Current_Vintage__c', 'Country__c', 'Size__c', 'Bt_Cs__c', 'Item_Cost_SBC__c',
+'SBC_Cases_OH__c', 'NY_NJ_Committed_Cases__c', 'SBC_Cases_on_Order__c', 'Next_Drop_Date__c', month_sbtrkt(-13), month_sbtrkt(-12), month_sbtrkt(-11), 'cases_sold_t120-t90', 'cases_sold_t90-t60', 'cases_sold_t60-t30',
+'cases_sold_t30', 'cases_sold_t7', 'last_3_months_YoY', '30_day_trend', '7_day_trend', 'OH_months_inventory', 'projected_sales_current_month', ('forecast:', month_namer(1)), ('forecast:', month_namer(2)), ('forecast:', month_namer(3)),('Estimated Cases OH', month_namer(1)), ('Estimated Cases OH', month_namer(2)), ('Estimated Cases OH', month_namer(3)), ('Estimated Cases OH', month_namer(4))]
+
+caw1_cols = ['ProductCode', 'Description', 'Current_Vintage__c', 'Country__c', 'Size__c', 'Bt_Cs__c', 'Item_Cost_CA__c',
+'CA_Cases_OH__c', 'CA_Committed_Cases__c', 'CA_Inv_Value__c', 'CAW1_Cases_on_Order__c', month_sbtrkt(-13), month_sbtrkt(-12), month_sbtrkt(-11), 'cases_sold_t120-t90', 'cases_sold_t90-t60', 'cases_sold_t60-t30',
+'cases_sold_t30', 'cases_sold_t7', 'last_3_months_YoY', '30_day_trend', '7_day_trend', 'OH_months_inventory', 'projected_sales_current_month', ('forecast:', month_namer(1)), ('forecast:', month_namer(2)), ('forecast:', month_namer(3)),('Estimated Cases OH', month_namer(1)), ('Estimated Cases OH', month_namer(2)), ('Estimated Cases OH', month_namer(3)), ('Estimated Cases OH', month_namer(4))]
+
+ill1_cols = ['ProductCode', 'Description', 'Current_Vintage__c', 'Country__c', 'Size__c', 'Bt_Cs__c', 'Item_Cost_ILL__c',
+'ILL_Cases_OH__c', 'ILL_Committed_Cases__c', 'ILL_Inv_Value__c', month_sbtrkt(-13), month_sbtrkt(-12), month_sbtrkt(-11), 'cases_sold_t120-t90', 'cases_sold_t90-t60', 'cases_sold_t60-t30',
+'cases_sold_t30', 'cases_sold_t7', 'last_3_months_YoY', '30_day_trend', '7_day_trend', 'OH_months_inventory', 'projected_sales_current_month', ('forecast:', month_namer(1)), ('forecast:', month_namer(2)), ('forecast:', month_namer(3)),('Estimated Cases OH', month_namer(1)), ('Estimated Cases OH', month_namer(2)), ('Estimated Cases OH', month_namer(3)), ('Estimated Cases OH', month_namer(4))]
+
+vaw1_cols = ['ProductCode', 'Description', 'Current_Vintage__c', 'Country__c', 'Size__c', 'Bt_Cs__c', 'Item_Cost_VA__c',
+'VA_Cases_OH__c', 'VA_Committed_Cases__c', 'VA_Inv_Value__c', month_sbtrkt(-13), month_sbtrkt(-12), month_sbtrkt(-11), 'cases_sold_t120-t90', 'cases_sold_t90-t60', 'cases_sold_t60-t30',
+'cases_sold_t30', 'cases_sold_t7', 'last_3_months_YoY', '30_day_trend', '7_day_trend', 'OH_months_inventory', 'projected_sales_current_month', ('forecast:', month_namer(1)), ('forecast:', month_namer(2)), ('forecast:', month_namer(3)),('Estimated Cases OH', month_namer(1)), ('Estimated Cases OH', month_namer(2)), ('Estimated Cases OH', month_namer(3)), ('Estimated Cases OH', month_namer(4))]
+
+global_final = global_oh[global_cols]
+sbc1_final = sbc1_oh[sbc1_cols]
+caw1_final = caw1_oh[caw1_cols]
+ill1_final = ill1_oh[ill1_cols]
+vaw1_final = vaw1_oh[vaw1_cols]
+
+
+gc = gs.service_account(filename='Inventory Manager/service_acct.json')
+
+spreadsheet = gc.open_by_key(setup.spreadsheet)
 
 sheet_global = spreadsheet.worksheet('Global')
 sheet_nj = spreadsheet.worksheet('NJ')
