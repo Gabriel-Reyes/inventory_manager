@@ -196,6 +196,12 @@ t_wh60 = pd.DataFrame(sf_wh_t60['records']).iloc[:, 1:]
 t_wh90 = pd.DataFrame(sf_wh_t90['records']).iloc[:, 1:]
 t_wh120 = pd.DataFrame(sf_wh_t120['records']).iloc[:, 1:]
 
+# columns to rename now to have polished end dataframes
+
+rename_cols_tx = {'cases_sold_t30':'Cases Sold: T-30',
+                'cases_sold_t7':'Cases Sold: T-7',
+                'cases_sold_this_month':'Cases Sold This Month'}
+
 
 # joining all t-x global queries into single df
 
@@ -203,6 +209,7 @@ tx_dfs = [t_120, t_90, t_60, t_30, t_7, this_month]
 tx_dfs = [df.set_index('ProductCode') for df in tx_dfs]
 tx_joins = [df.drop(columns='Item_Name__c') for df in tx_dfs[1:]]
 tx_global = tx_dfs[0].join(tx_joins).fillna(0)
+tx_global = tx_global.rename(columns=rename_cols_tx)
 
 
 # joining all t-x warehouse queries into single df
@@ -213,6 +220,8 @@ tx_whjoins = [df.drop(columns='Item_Name__c') for df in tx_whdfs[1:]]
 tx_wh_all = (tx_whdfs[0].
             join(tx_whjoins[0]).join(tx_whjoins[1]).join(tx_whjoins[2]).join(tx_whjoins[3]).join(tx_whjoins[4])
             .fillna(0))
+tx_wh_all = tx_wh_all.rename(columns=rename_cols_tx)
+
 
 # create list of t-x dataframes for each warehouse, callable based off position in warehouse list
 
@@ -226,29 +235,44 @@ base_table = base_table.set_index('ProductCode')
 base_table['Next_Drop_Date__c'] = pd.to_datetime(base_table['Next_Drop_Date__c'])
 base_table['Size__c'] = base_table['Size__c'].astype(float)
 
+# renaming base template columns to be more understandable
+
+rename_cols_base = {'Product_Family__c':'Product Family', 'Current_Vintage__c':'Current Vintage','Country__c':'Country',
+'Size__c':'Size', 'Bt_Cs__c':'Bottles/Case', 'Item_Cost_SBC__c':'Item Cost NJ', 'Item_Cost_CA__c':'Item Cost CA',
+'Item_Cost_ILL__c':'Item Cost IL', 'Item_Cost_VA__c':'Item Cost VA', 'Cases_On_Hand__c':'Total Cases OH',
+'Total_Committed_Cases__c':'Total Cases Committed', 'Total_Inv_Value__c':'Total Inv Value', 'SBC_Cases_OH__c':'NJ Cases OH',
+'NY_NJ_Committed_Cases__c':'NJ Cases Committed', 'NY_NJ_Available_Cases__c':'NJ Cases Available',
+'SBC_Inv_Value__c':'NJ Inv Value', 'CA_Cases_OH__c':'CA Cases OH', 'CA_Committed_Cases__c':'CA Cases Committed',
+'CA_Available_Cases__c':'CA Cases Available', 'CA_Inv_Value__c':'CA Inv Value', 'ILL_Cases_OH__c':'IL Cases OH',
+'ILL_Committed_Cases__c':'IL Cases Comitted', 'ILL_Available_Cases__c':'IL Cases Available', 'ILL_Inv_Value__c':'IL Inv Value',
+'VA_Cases_OH__c':'VA Cases OH', 'VA_Committed_Cases__c':'VA Cases Committed', 'VA_Available_Cases__c':'VA Cases Available',
+'VA_Inv_Value__c':'VA Inv Value', 'SBC_Cases_on_Order__c':'NJ Cases on Order', 'CAW1_Cases_on_Order__c':'CA Cases on Order',
+'Cases__c':'Cases on Next Drop', 'Next_Drop_Date__c':'Next Drop Date'}
+
+base_table = base_table.rename(columns=rename_cols_base)
 
 # creation of all base templates specifc to each depletion report style
 
-global_base = base_table[['Product_Family__c', 'Description', 'Current_Vintage__c', 'Country__c', 'Size__c',
-                        'Bt_Cs__c', 'Item_Cost_SBC__c', 'Cases_On_Hand__c', 'Total_Committed_Cases__c',
-                         'Total_Inv_Value__c', 'SBC_Cases_on_Order__c', 'Cases__c', 'Next_Drop_Date__c']]
+global_base = base_table[['Product Family', 'Description', 'Current Vintage', 'Country', 'Size',
+                        'Bottles/Case', 'Item Cost NJ', 'Total Cases OH', 'Total Cases Committed',
+                         'Total Inv Value', 'NJ Cases on Order', 'Cases on Next Drop', 'Next Drop Date']]
 
-sbc1_base = base_table[['Product_Family__c', 'Description', 'Current_Vintage__c', 'Country__c', 'Size__c',
-                       'Bt_Cs__c', 'Item_Cost_SBC__c', 'SBC_Cases_OH__c', 'NY_NJ_Committed_Cases__c',
-                       'NY_NJ_Available_Cases__c', 'SBC_Inv_Value__c', 'SBC_Cases_on_Order__c', 'Cases__c',
-                       'Next_Drop_Date__c']]
+sbc1_base = base_table[['Product Family', 'Description', 'Current Vintage', 'Country', 'Size',
+                       'Bottles/Case', 'Item Cost NJ', 'NJ Cases OH', 'NJ Cases Committed',
+                       'NJ Cases Available', 'NJ Inv Value', 'NJ Cases on Order', 'Cases on Next Drop',
+                       'Next Drop Date']]
 
-caw1_base = base_table[['Product_Family__c', 'Description', 'Current_Vintage__c', 'Country__c', 'Size__c',
-                       'Bt_Cs__c', 'Item_Cost_CA__c', 'CA_Cases_OH__c', 'CA_Committed_Cases__c',
-                       'CA_Available_Cases__c', 'CA_Inv_Value__c', 'CAW1_Cases_on_Order__c']]
+caw1_base = base_table[['Product Family', 'Description', 'Current Vintage', 'Country', 'Size',
+                       'Bottles/Case', 'Item Cost CA', 'CA Cases OH', 'CA Cases Committed',
+                       'CA Cases Available', 'CA Inv Value', 'CA Cases on Order']]
 
-ill1_base = base_table[['Product_Family__c', 'Description', 'Current_Vintage__c', 'Country__c', 'Size__c',
-                       'Bt_Cs__c', 'Item_Cost_ILL__c', 'ILL_Cases_OH__c', 'ILL_Committed_Cases__c',
-                       'ILL_Available_Cases__c', 'ILL_Inv_Value__c']]
+ill1_base = base_table[['Product Family', 'Description', 'Current Vintage', 'Country', 'Size',
+                       'Bottles/Case', 'Item Cost IL', 'IL Cases OH', 'IL Cases Comitted',
+                       'IL Cases Available', 'IL Inv Value']]
 
-vaw1_base = base_table[['Product_Family__c', 'Description', 'Current_Vintage__c', 'Country__c', 'Size__c',
-                       'Bt_Cs__c', 'Item_Cost_VA__c', 'VA_Cases_OH__c', 'VA_Committed_Cases__c',
-                       'VA_Available_Cases__c', 'VA_Inv_Value__c']]
+vaw1_base = base_table[['Product Family', 'Description', 'Current Vintage', 'Country', 'Size',
+                       'Bottles/Case', 'Item Cost VA', 'VA Cases OH', 'VA Cases Committed',
+                       'VA Cases Available', 'VA Inv Value']]
 
 
 # joining t-x sales data to respective base template
@@ -264,7 +288,7 @@ sbc1 = (sbc1_base.join(tx_whs[0].reset_index(level=1))
         .drop(['Warehouse__c', 'Item_Name__c'], axis=1)
         .sort_values('Description'))
 
-sbc1 = sbc1[(sbc1['SBC_Cases_OH__c'] > 0) | (sbc1['SBC_Cases_on_Order__c'] > 0)]
+sbc1 = sbc1[(sbc1['NJ Cases OH'] > 0) | (sbc1['NJ Cases on Order'] > 0)]
 
 sbc1.iloc[:, -5:] = sbc1.iloc[:, -5:].fillna(0)
 
@@ -273,7 +297,7 @@ caw1 = (caw1_base.join(tx_whs[1].reset_index(level=1))
         .drop(['Warehouse__c', 'Item_Name__c'], axis=1)
         .sort_values('Description'))
 
-caw1 = caw1[(caw1['CA_Cases_OH__c'] > 0) | (caw1['CAW1_Cases_on_Order__c'] > 0)]
+caw1 = caw1[(caw1['CA Cases OH'] > 0) | (caw1['CA Cases on Order'] > 0)]
 
 caw1.iloc[:, -5:] = caw1.iloc[:, -5:].fillna(0)
 
@@ -282,7 +306,7 @@ ill1 = (ill1_base.join(tx_whs[2].reset_index(level=1))
         .drop(['Warehouse__c', 'Item_Name__c'], axis=1)
         .sort_values('Description'))
 
-ill1 = ill1[ill1['ILL_Cases_OH__c'] > 0]
+ill1 = ill1[ill1['IL Cases OH'] > 0]
 
 ill1.iloc[:, -5:] = ill1.iloc[:, -5:].fillna(0)
 
@@ -291,23 +315,23 @@ vaw1 = (vaw1_base.join(tx_whs[3].reset_index(level=1))
         .drop(['Warehouse__c', 'Item_Name__c'], axis=1)
         .sort_values('Description'))
 
-vaw1 = vaw1[vaw1['VA_Cases_OH__c'] > 0]
+vaw1 = vaw1[vaw1['VA Cases OH'] > 0]
 
 vaw1.iloc[:, -5:] = vaw1.iloc[:, -5:].fillna(0)
 
 inv_reports = [global_report, sbc1, caw1, ill1, vaw1]
 
-global_report['OH_months_inventory'] = ((global_report['Cases_On_Hand__c']
-                                      - global_report['Total_Committed_Cases__c'])
-                                     / global_report['cases_sold_t30'])
+global_report['Months Inv OH'] = ((global_report['Total Cases OH']
+                                      - global_report['Total Cases Committed'])
+                                     / global_report['Cases Sold: T-30'])
 
-sbc1['OH_months_inventory'] = (sbc1['NY_NJ_Available_Cases__c'] / sbc1['cases_sold_t30']).round(1)
-caw1['OH_months_inventory'] = (caw1['CA_Available_Cases__c'] / caw1['cases_sold_t30']).round(1)
-ill1['OH_months_inventory'] = (ill1['ILL_Available_Cases__c'] / ill1['cases_sold_t30']).round(1)
-vaw1['OH_months_inventory'] = (vaw1['VA_Available_Cases__c'] / vaw1['cases_sold_t30']).round(1)
+sbc1['Months Inv OH'] = (sbc1['NJ Cases Available'] / sbc1['Cases Sold: T-30']).round(1)
+caw1['Months Inv OH'] = (caw1['CA Cases Available'] / caw1['Cases Sold: T-30']).round(1)
+ill1['Months Inv OH'] = (ill1['IL Cases Available'] / ill1['Cases Sold: T-30']).round(1)
+vaw1['Months Inv OH'] = (vaw1['VA Cases Available'] / vaw1['Cases Sold: T-30']).round(1)
 
 for df in inv_reports:
-    df['OH_months_inventory'] = df['OH_months_inventory'].replace([np.inf, -np.inf], np.nan).round(1)
+    df['Months Inv OH'] = df['Months Inv OH'].replace([np.inf, -np.inf], np.nan).round(1)
     df.reset_index(inplace=True)
 
 
@@ -316,7 +340,7 @@ for df in inv_reports:
 
 ## global master
 
-global_joined = global_report.merge(monthly_sales_global, how='left', left_on=['Product_Family__c', 'Size__c'],
+global_joined = global_report.merge(monthly_sales_global, how='left', left_on=['Product Family', 'Size'],
                             right_on=['Item Description: Product Family', 'Item Description: Size'])
 
 global_master = global_joined.drop([('Item Description: Product Family', ''), ('Item Description: Size', '')], axis=1)
@@ -324,7 +348,7 @@ global_master = global_joined.drop([('Item Description: Product Family', ''), ('
 
 ## sbc1 master
 
-sbc1_joined = sbc1.merge(monthly_sales_sbc1, how='left', left_on=['Product_Family__c', 'Size__c'],
+sbc1_joined = sbc1.merge(monthly_sales_sbc1, how='left', left_on=['Product Family', 'Size'],
                          right_on=['Item Description: Product Family', 'Item Description: Size'])
 
 sbc1_master = sbc1_joined.drop([('Item Description: Product Family', ''), ('Item Description: Size', ''),
@@ -333,7 +357,7 @@ sbc1_master = sbc1_joined.drop([('Item Description: Product Family', ''), ('Item
 
 ## caw1 master
 
-caw1_joined = caw1.merge(monthly_sales_caw1, how='left', left_on=['Product_Family__c', 'Size__c'],
+caw1_joined = caw1.merge(monthly_sales_caw1, how='left', left_on=['Product Family', 'Size'],
                          right_on=['Item Description: Product Family', 'Item Description: Size'])
 
 caw1_master = caw1_joined.drop([('Item Description: Product Family', ''), ('Item Description: Size', ''),
@@ -342,7 +366,7 @@ caw1_master = caw1_joined.drop([('Item Description: Product Family', ''), ('Item
 
 ## ill1 master
 
-ill1_joined = ill1.merge(monthly_sales_ill1, how='left', left_on=['Product_Family__c', 'Size__c'],
+ill1_joined = ill1.merge(monthly_sales_ill1, how='left', left_on=['Product Family', 'Size'],
                          right_on=['Item Description: Product Family', 'Item Description: Size'])
 
 ill1_master = ill1_joined.drop([('Item Description: Product Family', ''), ('Item Description: Size', ''),
@@ -351,7 +375,7 @@ ill1_master = ill1_joined.drop([('Item Description: Product Family', ''), ('Item
 
 ## vaw1 master
 
-vaw1_joined = vaw1.merge(monthly_sales_vaw1, how='left', left_on=['Product_Family__c', 'Size__c'],
+vaw1_joined = vaw1.merge(monthly_sales_vaw1, how='left', left_on=['Product Family', 'Size'],
                          right_on=['Item Description: Product Family', 'Item Description: Size'])
 
 vaw1_master = vaw1_joined.drop([('Item Description: Product Family', ''), ('Item Description: Size', ''),
@@ -383,8 +407,8 @@ def month_namer(months_from_today):
 ## function to predict next X months of sales
 
 def depletion_estimator_6mons(df):
-    last_3_mons_YoY = df['last_3_months_YoY']
-    t30 = df['cases_sold_t30']
+    last_3_mons_YoY = df['Trailing 3 Months YoY Trend']
+    t30 = df['Cases Sold: T-30']
     estimates = {}
     for i in range(1,7):            
         x = np.where(last_3_mons_YoY.isnull() == False,
@@ -399,7 +423,7 @@ def depletion_estimator_6mons(df):
 def cases_oh_estimator_mains(df, csohkey, dropdatekey, dropqtykey):
     setup = pd.DataFrame()
     oh = pd.DataFrame()
-    cases_left_this_month = df['projected_sales_current_month'] - df['cases_sold_this_month']
+    cases_left_this_month = df['Current Month Forecast'] - df['Cases Sold This Month']
     setup['cases_left_this_month'] = cases_left_this_month
     for i in range (1,7):
         y = np.where(df[dropdatekey].dt.month == (pd.Timestamp.today() + pd.tseries.offsets.DateOffset(months=(i-1))).month,
@@ -420,7 +444,7 @@ def cases_oh_estimator_mains(df, csohkey, dropdatekey, dropqtykey):
 def cases_oh_estimator_secondary(df, csohkey):
     setup = pd.DataFrame()
     oh = pd.DataFrame()
-    cases_left_this_month = df['projected_sales_current_month'] - df['cases_sold_this_month']
+    cases_left_this_month = df['Current Month Forecast'] - df['Cases Sold This Month']
     setup['cases_left_this_month'] = cases_left_this_month
 
     oh['Estimated Cases OH', month_namer(1)] = df[csohkey] - setup['cases_left_this_month']
@@ -434,20 +458,20 @@ def cases_oh_estimator_secondary(df, csohkey):
 for df in master_dfs:
     
     # segment out cases sold into 30 day intervals
-    df['cases_sold_t120-t90'] = df['cases_sold_t120'] - df['cases_sold_t90']
-    df['cases_sold_t90-t60'] = df['cases_sold_t90'] - df['cases_sold_t60']
-    df['cases_sold_t60-t30'] = df['cases_sold_t60'] - df['cases_sold_t30']
+    df['Cases Sold: T-120:90'] = df['cases_sold_t120'] - df['cases_sold_t90']
+    df['Cases Sold: T-90:60'] = df['cases_sold_t90'] - df['cases_sold_t60']
+    df['Cases Sold: T-60:30'] = df['cases_sold_t60'] - df['Cases Sold: T-30']
     
     # add 30 day trend
-    df['30_day_trend'] = (df['cases_sold_t30'] - df['cases_sold_t60-t30']) / df['cases_sold_t60-t30']
-    df['30_day_trend'] = df['30_day_trend'].replace([np.inf, -np.inf], np.nan).round(1)
+    df['30 Day Trend'] = (df['Cases Sold: T-30'] - df['Cases Sold: T-60:30']) / df['Cases Sold: T-60:30']
+    df['30 Day Trend'] = df['30 Day Trend'].replace([np.inf, -np.inf], np.nan).round(1)
 
     # add 7 day trend
-    df['7_day_trend'] = (df['cases_sold_t7'] - (df['cases_sold_t30']*(7/30))) / (df['cases_sold_t30']*(7/30))
-    df['7_day_trend'] = df['7_day_trend'].replace([np.inf, -np.inf], np.nan).round(1)
+    df['7 Day Trend'] = (df['Cases Sold: T-7'] - (df['Cases Sold: T-30']*(7/30))) / (df['Cases Sold: T-30']*(7/30))
+    df['7 Day Trend'] = df['7 Day Trend'].replace([np.inf, -np.inf], np.nan).round(1)
 
     # add last 3 month YoY trend
-    df['last_3_months_YoY'] = np.clip((((df[month_sbtrkt(-1)] +
+    df['Trailing 3 Months YoY Trend'] = np.clip((((df[month_sbtrkt(-1)] +
                                  df[month_sbtrkt(-2)] +
                                  df[month_sbtrkt(-3)]) -
                                     (df[month_sbtrkt(-13)] +
@@ -458,7 +482,7 @@ for df in master_dfs:
                                          df[month_sbtrkt(-15)])).replace([np.inf, -np.inf], np.nan).round(2), -1, 1)
 
     # add estimator for current month total sales
-    df['projected_sales_current_month'] = (df['cases_sold_this_month'] /
+    df['Current Month Forecast'] = (df['Cases Sold This Month'] /
                                             (pd.Timestamp.today().day / pd.Timestamp.today().days_in_month))
 
 
@@ -472,33 +496,53 @@ vaw1_pred = vaw1_master.join(depletion_estimator_6mons(vaw1_master))
 
 
 # add future cases on hand estimators for upcoming months
-global_oh = global_pred.join(cases_oh_estimator_mains(global_pred, 'Cases_On_Hand__c', 'Next_Drop_Date__c', 'Cases__c'))
-sbc1_oh = sbc1_pred.join(cases_oh_estimator_mains(sbc1_pred, 'SBC_Cases_OH__c', 'Next_Drop_Date__c', 'Cases__c'))
-caw1_oh = caw1_pred.join(cases_oh_estimator_secondary(caw1_pred, 'CA_Cases_OH__c'))
-ill1_oh = ill1_pred.join(cases_oh_estimator_secondary(ill1_pred, 'ILL_Cases_OH__c'))
-vaw1_oh = vaw1_pred.join(cases_oh_estimator_secondary(vaw1_pred, 'VA_Cases_OH__c'))
+global_oh = global_pred.join(cases_oh_estimator_mains(global_pred, 'Total Cases OH', 'Next Drop Date', 'Cases on Next Drop'))
+sbc1_oh = sbc1_pred.join(cases_oh_estimator_mains(sbc1_pred, 'NJ Cases OH', 'Next Drop Date', 'Cases on Next Drop'))
+caw1_oh = caw1_pred.join(cases_oh_estimator_secondary(caw1_pred, 'CA Cases OH'))
+ill1_oh = ill1_pred.join(cases_oh_estimator_secondary(ill1_pred, 'IL Cases OH'))
+vaw1_oh = vaw1_pred.join(cases_oh_estimator_secondary(vaw1_pred, 'VA Cases OH'))
 
 # selecting final columns for each warehouse report
 
-global_cols = ['ProductCode', 'Description', 'Current_Vintage__c', 'Country__c', 'Size__c', 'Bt_Cs__c', 'Item_Cost_SBC__c', 'Cases_On_Hand__c', 'Total_Committed_Cases__c', 'Total_Inv_Value__c', 'SBC_Cases_on_Order__c', 'Cases__c', 'Next_Drop_Date__c',
-month_sbtrkt(-13), month_sbtrkt(-12), month_sbtrkt(-11), 'cases_sold_t120-t90', 'cases_sold_t90-t60', 'cases_sold_t60-t30',
-'cases_sold_t30', 'cases_sold_t7', 'last_3_months_YoY', '30_day_trend', '7_day_trend', 'OH_months_inventory', 'projected_sales_current_month', ('forecast:', month_namer(1)), ('forecast:', month_namer(2)), ('forecast:', month_namer(3)),('Estimated Cases OH', month_namer(1)), ('Estimated Cases OH', month_namer(2)), ('Estimated Cases OH', month_namer(3)), ('Estimated Cases OH', month_namer(4))]
+global_cols = ['ProductCode', 'Description', 'Current Vintage', 'Country', 'Size', 'Bottles/Case', 'Item Cost NJ',
+'Total Cases OH', 'Total Cases Committed', 'Total Inv Value', 'NJ Cases on Order', 'Cases on Next Drop', 'Next Drop Date',
+month_sbtrkt(-13), month_sbtrkt(-12), month_sbtrkt(-11), month_sbtrkt(-10), 'Cases Sold: T-120:90', 'Cases Sold: T-90:60',
+'Cases Sold: T-60:30', 'Cases Sold: T-30', 'Cases Sold: T-7', 'Cases Sold This Month', 'Trailing 3 Months YoY Trend', '30 Day Trend', '7 Day Trend', 'Months Inv OH',
+'Current Month Forecast', ('forecast:', month_namer(1)), ('forecast:', month_namer(2)), ('forecast:', month_namer(3)),
+('Estimated Cases OH', month_namer(1)), ('Estimated Cases OH', month_namer(2)), ('Estimated Cases OH', month_namer(3)),
+('Estimated Cases OH', month_namer(4))]
 
-sbc1_cols = ['ProductCode', 'Description', 'Current_Vintage__c', 'Country__c', 'Size__c', 'Bt_Cs__c', 'Item_Cost_SBC__c',
-'SBC_Cases_OH__c', 'NY_NJ_Committed_Cases__c', 'SBC_Cases_on_Order__c', 'Next_Drop_Date__c', month_sbtrkt(-13), month_sbtrkt(-12), month_sbtrkt(-11), 'cases_sold_t120-t90', 'cases_sold_t90-t60', 'cases_sold_t60-t30',
-'cases_sold_t30', 'cases_sold_t7', 'last_3_months_YoY', '30_day_trend', '7_day_trend', 'OH_months_inventory', 'projected_sales_current_month', ('forecast:', month_namer(1)), ('forecast:', month_namer(2)), ('forecast:', month_namer(3)),('Estimated Cases OH', month_namer(1)), ('Estimated Cases OH', month_namer(2)), ('Estimated Cases OH', month_namer(3)), ('Estimated Cases OH', month_namer(4))]
+sbc1_cols = ['ProductCode', 'Description', 'Current Vintage', 'Country', 'Size', 'Bottles/Case', 'Item Cost NJ',
+'NJ Cases OH', 'NJ Cases Committed', 'NJ Inv Value', 'NJ Cases on Order', 'Next Drop Date', month_sbtrkt(-13),
+month_sbtrkt(-12), month_sbtrkt(-11), month_sbtrkt(-10), 'Cases Sold: T-120:90', 'Cases Sold: T-90:60', 'Cases Sold: T-60:30', 'Cases Sold: T-30',
+'Cases Sold: T-7', 'Cases Sold This Month', 'Trailing 3 Months YoY Trend', '30 Day Trend', '7 Day Trend', 'Months Inv OH', 'Current Month Forecast',
+('forecast:', month_namer(1)), ('forecast:', month_namer(2)), ('forecast:', month_namer(3)),
+('Estimated Cases OH', month_namer(1)), ('Estimated Cases OH', month_namer(2)), ('Estimated Cases OH', month_namer(3)),
+('Estimated Cases OH', month_namer(4))]
 
-caw1_cols = ['ProductCode', 'Description', 'Current_Vintage__c', 'Country__c', 'Size__c', 'Bt_Cs__c', 'Item_Cost_CA__c',
-'CA_Cases_OH__c', 'CA_Committed_Cases__c', 'CA_Inv_Value__c', 'CAW1_Cases_on_Order__c', month_sbtrkt(-13), month_sbtrkt(-12), month_sbtrkt(-11), 'cases_sold_t120-t90', 'cases_sold_t90-t60', 'cases_sold_t60-t30',
-'cases_sold_t30', 'cases_sold_t7', 'last_3_months_YoY', '30_day_trend', '7_day_trend', 'OH_months_inventory', 'projected_sales_current_month', ('forecast:', month_namer(1)), ('forecast:', month_namer(2)), ('forecast:', month_namer(3)),('Estimated Cases OH', month_namer(1)), ('Estimated Cases OH', month_namer(2)), ('Estimated Cases OH', month_namer(3)), ('Estimated Cases OH', month_namer(4))]
+caw1_cols = ['ProductCode', 'Description', 'Current Vintage', 'Country', 'Size', 'Bottles/Case', 'Item Cost CA',
+'CA Cases OH', 'CA Cases Committed', 'CA Inv Value', 'CA Cases on Order', month_sbtrkt(-13),
+month_sbtrkt(-12), month_sbtrkt(-11), month_sbtrkt(-10), 'Cases Sold: T-120:90', 'Cases Sold: T-90:60', 'Cases Sold: T-60:30',
+'Cases Sold: T-30', 'Cases Sold: T-7', 'Cases Sold This Month', 'Trailing 3 Months YoY Trend', '30 Day Trend', '7 Day Trend',
+'Months Inv OH', 'Current Month Forecast', ('forecast:', month_namer(1)), ('forecast:', month_namer(2)),
+('forecast:', month_namer(3)),('Estimated Cases OH', month_namer(1)), ('Estimated Cases OH', month_namer(2)),
+('Estimated Cases OH', month_namer(3)), ('Estimated Cases OH', month_namer(4))]
 
-ill1_cols = ['ProductCode', 'Description', 'Current_Vintage__c', 'Country__c', 'Size__c', 'Bt_Cs__c', 'Item_Cost_ILL__c',
-'ILL_Cases_OH__c', 'ILL_Committed_Cases__c', 'ILL_Inv_Value__c', month_sbtrkt(-13), month_sbtrkt(-12), month_sbtrkt(-11), 'cases_sold_t120-t90', 'cases_sold_t90-t60', 'cases_sold_t60-t30',
-'cases_sold_t30', 'cases_sold_t7', 'last_3_months_YoY', '30_day_trend', '7_day_trend', 'OH_months_inventory', 'projected_sales_current_month', ('forecast:', month_namer(1)), ('forecast:', month_namer(2)), ('forecast:', month_namer(3)),('Estimated Cases OH', month_namer(1)), ('Estimated Cases OH', month_namer(2)), ('Estimated Cases OH', month_namer(3)), ('Estimated Cases OH', month_namer(4))]
+ill1_cols = ['ProductCode', 'Description', 'Current Vintage', 'Country', 'Size', 'Bottles/Case', 'Item Cost IL',
+'IL Cases OH', 'IL Cases Comitted', 'IL Inv Value', month_sbtrkt(-13), month_sbtrkt(-12), month_sbtrkt(-11),
+month_sbtrkt(-10), 'Cases Sold: T-120:90', 'Cases Sold: T-90:60', 'Cases Sold: T-60:30', 'Cases Sold: T-30', 'Cases Sold: T-7',
+'Cases Sold This Month', 'Trailing 3 Months YoY Trend', '30 Day Trend', '7 Day Trend', 'Months Inv OH',
+'Current Month Forecast', ('forecast:', month_namer(1)),
+('forecast:', month_namer(2)), ('forecast:', month_namer(3)),('Estimated Cases OH', month_namer(1)),
+('Estimated Cases OH', month_namer(2)), ('Estimated Cases OH', month_namer(3)), ('Estimated Cases OH', month_namer(4))]
 
-vaw1_cols = ['ProductCode', 'Description', 'Current_Vintage__c', 'Country__c', 'Size__c', 'Bt_Cs__c', 'Item_Cost_VA__c',
-'VA_Cases_OH__c', 'VA_Committed_Cases__c', 'VA_Inv_Value__c', month_sbtrkt(-13), month_sbtrkt(-12), month_sbtrkt(-11), 'cases_sold_t120-t90', 'cases_sold_t90-t60', 'cases_sold_t60-t30',
-'cases_sold_t30', 'cases_sold_t7', 'last_3_months_YoY', '30_day_trend', '7_day_trend', 'OH_months_inventory', 'projected_sales_current_month', ('forecast:', month_namer(1)), ('forecast:', month_namer(2)), ('forecast:', month_namer(3)),('Estimated Cases OH', month_namer(1)), ('Estimated Cases OH', month_namer(2)), ('Estimated Cases OH', month_namer(3)), ('Estimated Cases OH', month_namer(4))]
+vaw1_cols = ['ProductCode', 'Description', 'Current Vintage', 'Country', 'Size', 'Bottles/Case', 'Item Cost VA',
+'VA Cases OH', 'VA Cases Committed', 'VA Inv Value', month_sbtrkt(-13), month_sbtrkt(-12), month_sbtrkt(-11),
+month_sbtrkt(-10), 'Cases Sold: T-120:90', 'Cases Sold: T-90:60', 'Cases Sold: T-60:30', 'Cases Sold: T-30', 'Cases Sold: T-7',
+'Cases Sold This Month', 'Trailing 3 Months YoY Trend', '30 Day Trend', '7 Day Trend', 'Months Inv OH',
+'Current Month Forecast', ('forecast:', month_namer(1)),
+('forecast:', month_namer(2)), ('forecast:', month_namer(3)),('Estimated Cases OH', month_namer(1)),
+('Estimated Cases OH', month_namer(2)), ('Estimated Cases OH', month_namer(3)), ('Estimated Cases OH', month_namer(4))]
 
 global_final = global_oh[global_cols]
 sbc1_final = sbc1_oh[sbc1_cols]
@@ -507,14 +551,14 @@ ill1_final = ill1_oh[ill1_cols]
 vaw1_final = vaw1_oh[vaw1_cols]
 
 
-gc = gs.service_account(filename='Inventory Manager/service_acct.json')
+gc = gs.service_account(filename=setup.company_service_acct_key)
 
-spreadsheet = gc.open_by_key(setup.spreadsheet)
+spreadsheet = gc.open_by_key(setup.company_spreadsheet)
 
 sheet_global = spreadsheet.worksheet('Global')
 sheet_nj = spreadsheet.worksheet('NJ')
 sheet_ca = spreadsheet.worksheet('CA')
-sheet_ill = spreadsheet.worksheet('ILL')
+sheet_ill = spreadsheet.worksheet('IL')
 sheet_va = spreadsheet.worksheet('VA')
 
 sheets = [sheet_global, sheet_nj, sheet_ca, sheet_ill, sheet_va]
@@ -529,7 +573,7 @@ def reset_sheet(name):
     if name == 'CA':
         sheet_ca.clear()
         gd.set_with_dataframe(sheet_ca, caw1_final)        
-    if name == 'ILL':
+    if name == 'IL':
         sheet_ill.clear()
         gd.set_with_dataframe(sheet_ill, ill1_final)
     if name == 'VA':
@@ -547,3 +591,5 @@ def spreadsheet_reset():
     gd.set_with_dataframe(sheet_ill, ill1_final)
     sheet_va.clear()
     gd.set_with_dataframe(sheet_va, vaw1_final)
+
+spreadsheet_reset()
