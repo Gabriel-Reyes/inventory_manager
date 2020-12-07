@@ -5,14 +5,12 @@ import gspread_dataframe as gd
 import gspread as gs
 
 import setup
-
-from simple_salesforce import Salesforce
-sf = Salesforce(username=setup.sf_username, password=setup.sf_password, security_token=setup.sf_token)
+import queries
 
 
 # csv export of historical sales
 
-sales_master = pd.read_csv(setup.csv_path)
+sales_master = pd.read_csv('Inventory Manager/historical_sales.csv')
 
 
 # dropping na values, filtering out samples
@@ -29,7 +27,6 @@ sales_master['Delivery Date'] = pd.to_datetime(sales_master['Delivery Date'])
 sales_master['Month'] = sales_master['Delivery Date'].dt.month
 sales_master['Year'] = sales_master['Delivery Date'].dt.year
 sales_master['Week'] = sales_master['Delivery Date'].dt.isocalendar().week
-
 
 
 # limiting data to only directly purchased and managed inventory
@@ -61,166 +58,11 @@ monthly_sales_ill1 = monthly_sales_wh[monthly_sales_wh['Warehouse'] == warehouse
 monthly_sales_vaw1 = monthly_sales_wh[monthly_sales_wh['Warehouse'] == warehouses[3]].fillna(0)
 
 
-# main inventory template, data from Salesforce product object 
+# import dfs from queries sheet
 
-base_template = sf.query("""SELECT ProductCode, Product_Family__c, Description, Current_Vintage__c,
-                            Country__c, Size__c, Bt_Cs__c,
-                            Item_Cost_SBC__c, Item_Cost_CA__c, Item_Cost_ILL__c, Item_Cost_VA__c,
-                            Cases_On_Hand__c, Total_Committed_Cases__c, Total_Inv_Value__c,
-                            SBC_Cases_OH__c, NY_NJ_Committed_Cases__c, NY_NJ_Available_Cases__c, SBC_Inv_Value__c,
-                            CA_Cases_OH__c, CA_Committed_Cases__c, CA_Available_Cases__c, CA_Inv_Value__c,
-                            ILL_Cases_OH__c, ILL_Committed_Cases__c, ILL_Available_Cases__c, ILL_Inv_Value__c,
-                            VA_Cases_OH__c, VA_Committed_Cases__c, VA_Available_Cases__c, VA_Inv_Value__c,
-                            SBC_Cases_on_Order__c, CAW1_Cases_on_Order__c, Cases__c, Next_Drop_Date__c
-                            FROM Product2
-                            WHERE IsActive = TRUE
-                            ORDER BY Description""")
-
-
-# cases sold: today - x days global; Salesforce queries from invoice_lines object
-
-sf_this_month = sf.query("""SELECT Item_No__r.ProductCode, Item_Name__c, SUM(Cases_Sold__c) cases_sold_this_month
-                            FROM Invoice_line__c
-                            WHERE Cases_Sold__c > 0
-                            AND Delivery_Date_from_Invoice__c = THIS_MONTH
-                            GROUP BY Item_No__r.ProductCode, Item_Name__c
-                            ORDER BY Item_Name__c""")
-
-sf_t7 = sf.query("""SELECT Item_No__r.ProductCode, Item_Name__c, SUM(Cases_Sold__c) cases_sold_t7
-                    FROM Invoice_line__c
-                    WHERE Cases_Sold__c > 0
-                    AND Delivery_Date_from_Invoice__c = Last_N_Days:7
-                    GROUP BY Item_No__r.ProductCode, Item_Name__c
-                    ORDER BY Item_Name__c""")
-
-sf_t30 = sf.query("""SELECT Item_No__r.ProductCode, Item_Name__c, SUM(Cases_Sold__c) cases_sold_t30
-                    FROM Invoice_line__c
-                    WHERE Cases_Sold__c > 0
-                    AND Delivery_Date_from_Invoice__c = Last_N_Days:30
-                    GROUP BY Item_No__r.ProductCode, Item_Name__c
-                    ORDER BY Item_Name__c""")
-
-sf_t60 = sf.query("""SELECT Item_No__r.ProductCode, Item_Name__c, SUM(Cases_Sold__c) cases_sold_t60
-                    FROM Invoice_line__c
-                    WHERE Cases_Sold__c > 0
-                    AND Delivery_Date_from_Invoice__c = Last_N_Days:60
-                    GROUP BY Item_No__r.ProductCode, Item_Name__c
-                    ORDER BY Item_Name__c""")
-
-sf_t90 = sf.query("""SELECT Item_No__r.ProductCode, Item_Name__c, SUM(Cases_Sold__c) cases_sold_t90
-                    FROM Invoice_line__c
-                    WHERE Cases_Sold__c > 0
-                    AND Delivery_Date_from_Invoice__c = Last_N_Days:90
-                    GROUP BY Item_No__r.ProductCode, Item_Name__c
-                    ORDER BY Item_Name__c""")
-
-sf_t120 = sf.query("""SELECT Item_No__r.ProductCode, Item_Name__c, SUM(Cases_Sold__c) cases_sold_t120
-                    FROM Invoice_line__c
-                    WHERE Cases_Sold__c > 0
-                    AND Delivery_Date_from_Invoice__c = Last_N_Days:120
-                    GROUP BY Item_No__r.ProductCode, Item_Name__c
-                    ORDER BY Item_Name__c""")
-
-
-# cases sold: today - x days by warehouse; Salesforce queries from invoice_lines object
-
-sf_wh_this_month = sf.query("""SELECT Item_No__r.ProductCode, Item_Name__c, Warehouse__c,
-                            SUM(Cases_Sold__c) cases_sold_this_month
-                            FROM Invoice_line__c
-                            WHERE Cases_Sold__c > 0
-                            AND Delivery_Date_from_Invoice__c = THIS_MONTH
-                            GROUP BY Item_No__r.ProductCode, Item_Name__c, Warehouse__c
-                            ORDER BY Item_Name__c""")
-
-sf_wh_t7 = sf.query("""SELECT Item_No__r.ProductCode, Item_Name__c, Warehouse__c,
-                    SUM(Cases_Sold__c) cases_sold_t7
-                    FROM Invoice_line__c
-                    WHERE Cases_Sold__c > 0
-                    AND Delivery_Date_from_Invoice__c = Last_N_Days:7
-                    GROUP BY Item_No__r.ProductCode, Item_Name__c, Warehouse__c
-                    ORDER BY Item_Name__c""")
-
-
-sf_wh_t30 = sf.query("""SELECT Item_No__r.ProductCode, Item_Name__c, Warehouse__c,
-                    SUM(Cases_Sold__c) cases_sold_t30
-                    FROM Invoice_line__c
-                    WHERE Cases_Sold__c > 0
-                    AND Delivery_Date_from_Invoice__c = Last_N_Days:30
-                    GROUP BY Item_No__r.ProductCode, Item_Name__c, Warehouse__c
-                    ORDER BY Item_Name__c""")
-
-
-sf_wh_t60 = sf.query("""SELECT Item_No__r.ProductCode, Item_Name__c, Warehouse__c,
-                    SUM(Cases_Sold__c) cases_sold_t60
-                    FROM Invoice_line__c
-                    WHERE Cases_Sold__c > 0
-                    AND Delivery_Date_from_Invoice__c = Last_N_Days:60
-                    GROUP BY Item_No__r.ProductCode, Item_Name__c, Warehouse__c
-                    ORDER BY Item_Name__c""")
-
-
-sf_wh_t90 = sf.query("""SELECT Item_No__r.ProductCode, Item_Name__c, Warehouse__c,
-                    SUM(Cases_Sold__c) cases_sold_t90
-                    FROM Invoice_line__c
-                    WHERE Cases_Sold__c > 0
-                    AND Delivery_Date_from_Invoice__c = Last_N_Days:90
-                    GROUP BY Item_No__r.ProductCode, Item_Name__c, Warehouse__c
-                    ORDER BY Item_Name__c""")
-
-
-sf_wh_t120 = sf.query("""SELECT Item_No__r.ProductCode, Item_Name__c, Warehouse__c,
-                    SUM(Cases_Sold__c) cases_sold_t120
-                    FROM Invoice_line__c
-                    WHERE Cases_Sold__c > 0
-                    AND Delivery_Date_from_Invoice__c = Last_N_Days:120
-                    GROUP BY Item_No__r.ProductCode, Item_Name__c, Warehouse__c
-                    ORDER BY Item_Name__c""")
-
-
-# cs sold t-x global, formatting SOQL queries into dataframes
-
-this_month = pd.DataFrame(sf_this_month['records']).iloc[:, 1:]
-t_7 = pd.DataFrame(sf_t7['records']).iloc[:, 1:]
-t_30 = pd.DataFrame(sf_t30['records']).iloc[:, 1:]
-t_60 = pd.DataFrame(sf_t60['records']).iloc[:, 1:]
-t_90 = pd.DataFrame(sf_t90['records']).iloc[:, 1:]
-t_120 = pd.DataFrame(sf_t120['records']).iloc[:, 1:]
-
-
-# cs sold t-x by warehouse, formatting SOQL queries into dataframes
-
-t_wh_this_month = pd.DataFrame(sf_wh_this_month['records']).iloc[:, 1:]
-t_wh7 = pd.DataFrame(sf_wh_t7['records']).iloc[:, 1:]
-t_wh30 = pd.DataFrame(sf_wh_t30['records']).iloc[:, 1:]
-t_wh60 = pd.DataFrame(sf_wh_t60['records']).iloc[:, 1:]
-t_wh90 = pd.DataFrame(sf_wh_t90['records']).iloc[:, 1:]
-t_wh120 = pd.DataFrame(sf_wh_t120['records']).iloc[:, 1:]
-
-# columns to rename now to have polished end dataframes
-
-rename_cols_tx = {'cases_sold_t30':'Cases Sold: T-30',
-                'cases_sold_t7':'Cases Sold: T-7',
-                'cases_sold_this_month':'Cases Sold This Month'}
-
-
-# joining all t-x global queries into single df
-
-tx_dfs = [t_120, t_90, t_60, t_30, t_7, this_month]
-tx_dfs = [df.set_index('ProductCode') for df in tx_dfs]
-tx_joins = [df.drop(columns='Item_Name__c') for df in tx_dfs[1:]]
-tx_global = tx_dfs[0].join(tx_joins).fillna(0)
-tx_global = tx_global.rename(columns=rename_cols_tx)
-
-
-# joining all t-x warehouse queries into single df
-
-tx_whdfs = [t_wh120, t_wh90, t_wh60, t_wh30, t_wh7, t_wh_this_month]
-tx_whdfs = [df.set_index(['ProductCode', 'Warehouse__c']) for df in tx_whdfs]
-tx_whjoins = [df.drop(columns='Item_Name__c') for df in tx_whdfs[1:]]
-tx_wh_all = (tx_whdfs[0].
-            join(tx_whjoins[0]).join(tx_whjoins[1]).join(tx_whjoins[2]).join(tx_whjoins[3]).join(tx_whjoins[4])
-            .fillna(0))
-tx_wh_all = tx_wh_all.rename(columns=rename_cols_tx)
+tx_global = queries.tx_global
+tx_wh_all = queries.tx_wh_all
+base_table = queries.base_table
 
 
 # create list of t-x dataframes for each warehouse, callable based off position in warehouse list
@@ -228,34 +70,11 @@ tx_wh_all = tx_wh_all.rename(columns=rename_cols_tx)
 tx_whs = [tx_wh_all[tx_wh_all.index.get_level_values(1) == wh] for wh in warehouses]
 
 
-# creating base template that time-interval sales data can be joined onto by product code
-
-base_table = pd.DataFrame(base_template['records']).iloc[:, 1:]
-base_table = base_table.set_index('ProductCode')
-base_table['Next_Drop_Date__c'] = pd.to_datetime(base_table['Next_Drop_Date__c'])
-base_table['Size__c'] = base_table['Size__c'].astype(float)
-
-# renaming base template columns to be more understandable
-
-rename_cols_base = {'Product_Family__c':'Product Family', 'Current_Vintage__c':'Current Vintage','Country__c':'Country',
-'Size__c':'Size', 'Bt_Cs__c':'Bottles/Case', 'Item_Cost_SBC__c':'Item Cost NJ', 'Item_Cost_CA__c':'Item Cost CA',
-'Item_Cost_ILL__c':'Item Cost IL', 'Item_Cost_VA__c':'Item Cost VA', 'Cases_On_Hand__c':'Total Cases OH',
-'Total_Committed_Cases__c':'Total Cases Committed', 'Total_Inv_Value__c':'Total Inv Value', 'SBC_Cases_OH__c':'NJ Cases OH',
-'NY_NJ_Committed_Cases__c':'NJ Cases Committed', 'NY_NJ_Available_Cases__c':'NJ Cases Available',
-'SBC_Inv_Value__c':'NJ Inv Value', 'CA_Cases_OH__c':'CA Cases OH', 'CA_Committed_Cases__c':'CA Cases Committed',
-'CA_Available_Cases__c':'CA Cases Available', 'CA_Inv_Value__c':'CA Inv Value', 'ILL_Cases_OH__c':'IL Cases OH',
-'ILL_Committed_Cases__c':'IL Cases Comitted', 'ILL_Available_Cases__c':'IL Cases Available', 'ILL_Inv_Value__c':'IL Inv Value',
-'VA_Cases_OH__c':'VA Cases OH', 'VA_Committed_Cases__c':'VA Cases Committed', 'VA_Available_Cases__c':'VA Cases Available',
-'VA_Inv_Value__c':'VA Inv Value', 'SBC_Cases_on_Order__c':'NJ Cases on Order', 'CAW1_Cases_on_Order__c':'CA Cases on Order',
-'Cases__c':'Cases on Next Drop', 'Next_Drop_Date__c':'Next Drop Date'}
-
-base_table = base_table.rename(columns=rename_cols_base)
-
 # creation of all base templates specifc to each depletion report style
 
 global_base = base_table[['Product Family', 'Description', 'Current Vintage', 'Country', 'Size',
-                        'Bottles/Case', 'Item Cost NJ', 'Total Cases OH', 'Total Cases Committed',
-                         'Total Inv Value', 'NJ Cases on Order', 'Cases on Next Drop', 'Next Drop Date']]
+                        'Bottles/Case', 'Item Cost NJ', 'Total Cases OH', 'NJ Cases OH', 'CA Cases OH',
+                        'Total Cases Committed', 'Total Inv Value', 'NJ Cases on Order', 'Cases on Next Drop', 'Next Drop Date']]
 
 sbc1_base = base_table[['Product Family', 'Description', 'Current Vintage', 'Country', 'Size',
                        'Bottles/Case', 'Item Cost NJ', 'NJ Cases OH', 'NJ Cases Committed',
@@ -505,8 +324,8 @@ vaw1_oh = vaw1_pred.join(cases_oh_estimator_secondary(vaw1_pred, 'VA Cases OH'))
 # selecting final columns for each warehouse report
 
 global_cols = ['ProductCode', 'Description', 'Current Vintage', 'Country', 'Size', 'Bottles/Case', 'Item Cost NJ',
-'Total Cases OH', 'Total Cases Committed', 'Total Inv Value', 'NJ Cases on Order', 'Cases on Next Drop', 'Next Drop Date',
-month_sbtrkt(-13), month_sbtrkt(-12), month_sbtrkt(-11), month_sbtrkt(-10), 'Cases Sold: T-120:90', 'Cases Sold: T-90:60',
+'Total Cases OH', 'NJ Cases OH', 'CA Cases OH', 'Total Cases Committed', 'Total Inv Value', 'NJ Cases on Order', 'Cases on Next Drop',
+'Next Drop Date', month_sbtrkt(-13), month_sbtrkt(-12), month_sbtrkt(-11), month_sbtrkt(-10), 'Cases Sold: T-120:90', 'Cases Sold: T-90:60',
 'Cases Sold: T-60:30', 'Cases Sold: T-30', 'Cases Sold: T-7', 'Cases Sold This Month', 'Trailing 3 Months YoY Trend', '30 Day Trend', '7 Day Trend', 'Months Inv OH',
 'Current Month Forecast', ('forecast:', month_namer(1)), ('forecast:', month_namer(2)), ('forecast:', month_namer(3)),
 ('Estimated Cases OH', month_namer(1)), ('Estimated Cases OH', month_namer(2)), ('Estimated Cases OH', month_namer(3)),
@@ -550,6 +369,7 @@ caw1_final = caw1_oh[caw1_cols]
 ill1_final = ill1_oh[ill1_cols]
 vaw1_final = vaw1_oh[vaw1_cols]
 
+# connecting to google spreadsheet, loading dfs into selected sheets
 
 gc = gs.service_account(filename=setup.company_service_acct_key)
 
