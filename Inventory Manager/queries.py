@@ -1,9 +1,11 @@
 import pandas as pd
 import setup
+from custom_classes import cash_flow, payables, receivables
 
 from simple_salesforce import Salesforce
 
 sf = Salesforce(username=setup.sf_username, password=setup.sf_password, security_token=setup.sf_token)
+
 
 # main inventory template, data from Salesforce product object 
 
@@ -224,3 +226,11 @@ rename_cols_ar = {'Account__c':'Account', 'DBA__c':'DBA', 'Balance__c':'Balance'
                     'Aging__c':'Days Aging', 'Invoice_Status__c':'Invoice Status', 'Document_Type__c':'Doc Type'}
 
 ar = ar.rename(columns=rename_cols_ar)
+
+# joining AP and AR dataframes
+
+ap = payables(ap).monthly()
+ap['Type'] = 'Accounts Payable'
+ar = receivables(ar).monthly()
+ar['Type'] = 'Accounts Receivable'
+cash_flow = pd.concat([ap,ar])

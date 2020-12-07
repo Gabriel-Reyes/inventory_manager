@@ -7,7 +7,6 @@ import gspread as gs
 import setup
 import queries
 
-
 # csv export of historical sales
 
 sales_master = pd.read_csv('Inventory Manager/historical_sales.csv')
@@ -322,7 +321,6 @@ ill1_oh = ill1_pred.join(cases_oh_estimator_secondary(ill1_pred, 'IL Cases OH'))
 vaw1_oh = vaw1_pred.join(cases_oh_estimator_secondary(vaw1_pred, 'VA Cases OH'))
 
 # selecting final columns for each warehouse report
-
 global_cols = ['ProductCode', 'Description', 'Current Vintage', 'Country', 'Size', 'Bottles/Case', 'Item Cost NJ',
 'Total Cases OH', 'NJ Cases OH', 'CA Cases OH', 'Total Cases Committed', 'Total Inv Value', 'NJ Cases on Order', 'Cases on Next Drop',
 'Next Drop Date', month_sbtrkt(-13), month_sbtrkt(-12), month_sbtrkt(-11), month_sbtrkt(-10), 'Cases Sold: T-120:90', 'Cases Sold: T-90:60',
@@ -380,8 +378,9 @@ sheet_nj = spreadsheet.worksheet('NJ')
 sheet_ca = spreadsheet.worksheet('CA')
 sheet_ill = spreadsheet.worksheet('IL')
 sheet_va = spreadsheet.worksheet('VA')
+sheet_cashflow = spreadsheet.worksheet('Cash Flow')
 
-sheets = [sheet_global, sheet_nj, sheet_ca, sheet_ill, sheet_va]
+# functions to clear & refresh data on google sheets
 
 def reset_sheet(name):
     if name == 'Global':
@@ -412,4 +411,10 @@ def spreadsheet_reset():
     sheet_va.clear()
     gd.set_with_dataframe(sheet_va, vaw1_final)
 
-spreadsheet_reset()
+def reset_global():
+    sheet_global.clear()
+    gd.set_with_dataframe(sheet_global, global_final)
+    sheet_cashflow.clear()
+    gd.set_with_dataframe(sheet_cashflow, queries.cash_flow)
+
+reset_global()
