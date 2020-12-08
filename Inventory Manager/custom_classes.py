@@ -1,8 +1,6 @@
 import pandas as pd
 import numpy as np
 
-import queries
-
 
 class cash_flow:
     def __init__(self, data):

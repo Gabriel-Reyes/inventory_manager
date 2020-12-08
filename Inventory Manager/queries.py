@@ -131,9 +131,26 @@ sf_ap = sf.query('''SELECT Account__c, Amount_Paid__c, Doc_Currency__c, Doc_Rate
                     WHERE Order_Status__c = 'O'
                     AND DocType__c = 'IN' ''')
 
-sf_ar = sf.query('''SELECT Account__c, DBA__c, Balance__c, Due_Date__c, Aging__c, Invoice_Status__c, Document_Type__c
+sf_ar_cq = sf.query('''SELECT Account__c, DBA__c, Balance__c, Due_Date__c, Aging__c, Invoice_Status__c, Document_Type__c
                     FROM Invoice__c
-                    WHERE Invoice_Status__c = 'O' ''')
+                    WHERE Invoice_Status__c = 'O'
+                    AND (NOT DBA__c LIKE '%Sample%')
+                    AND (External_ID__c LIKE 'FQZ%')
+                    AND Due_Date__c = THIS_QUARTER ''')
+
+sf_ar_before_cq = sf.query('''SELECT Account__c, DBA__c, Balance__c, Due_Date__c, Aging__c, Invoice_Status__c, Document_Type__c
+                    FROM Invoice__c
+                    WHERE Invoice_Status__c = 'O'
+                    AND (NOT DBA__c LIKE '%Sample%')
+                    AND (External_ID__c LIKE 'FQZ%')
+                    AND Due_Date__c < THIS_QUARTER ''')
+
+sf_ar_after_cq = sf.query('''SELECT Account__c, DBA__c, Balance__c, Due_Date__c, Aging__c, Invoice_Status__c, Document_Type__c
+                    FROM Invoice__c
+                    WHERE Invoice_Status__c = 'O'
+                    AND (NOT DBA__c LIKE '%Sample%')
+                    AND (External_ID__c LIKE 'FQZ%')
+                    AND Due_Date__c > THIS_QUARTER ''')
 
 
 # cs sold t-x global, formatting SOQL queries into dataframes
@@ -220,12 +237,17 @@ ap = ap.rename(columns=rename_cols_ap)
 
 # accounts receivable df
 
-ar = pd.DataFrame(sf_ar['records']).iloc[:, 1:]
+sf_ar_cq = pd.DataFrame(sf_ar_cq['records']).iloc[:, 1:]
+sf_ar_before_cq = pd.DataFrame(sf_ar_before_cq['records']).iloc[:, 1:]
+sf_ar_after_cq = pd.DataFrame(sf_ar_after_cq['records']).iloc[:, 1:]
+
+ar = pd.concat([sf_ar_cq, sf_ar_before_cq, sf_ar_after_cq])
 
 rename_cols_ar = {'Account__c':'Account', 'DBA__c':'DBA', 'Balance__c':'Balance', 'Due_Date__c':'Due Date',
                     'Aging__c':'Days Aging', 'Invoice_Status__c':'Invoice Status', 'Document_Type__c':'Doc Type'}
 
 ar = ar.rename(columns=rename_cols_ar)
+
 
 # joining AP and AR dataframes
 
