@@ -414,6 +414,10 @@ def spreadsheet_reset():
 def reset_global():
     sheet_global.clear()
     gd.set_with_dataframe(sheet_global, global_final)
+    sheet_nj.clear()
+    gd.set_with_dataframe(sheet_nj, sbc1_final)
+    sheet_ca.clear()
+    gd.set_with_dataframe(sheet_ca, caw1_final)
     sheet_cashflow.clear()
     gd.set_with_dataframe(sheet_cashflow, queries.cash_flow)
 

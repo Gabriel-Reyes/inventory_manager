@@ -41,4 +41,4 @@ class payables(cash_flow):
 class receivables(cash_flow):
     def __init__(self, data):
         super().__init__(data)
-        self.df = self.df[self.df['Balance'] > 0]
+        self.df = self.df[self.df['Balance'] != 0]

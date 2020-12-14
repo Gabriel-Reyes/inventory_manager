@@ -1,6 +1,6 @@
 import pandas as pd
 import setup
-from custom_classes import cash_flow, payables, receivables
+from classes import cash_flow, payables, receivables
 
 from simple_salesforce import Salesforce
 
