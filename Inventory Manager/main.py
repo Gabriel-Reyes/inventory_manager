@@ -398,10 +398,15 @@ def reset_sheet(name):
     if name == 'VA':
         sheet_va.clear()
         gd.set_with_dataframe(sheet_va, vaw1_final)
+    if name == 'Cash Flow':
+        sheet_cashflow.clear()
+        gd.set_with_dataframe(sheet_cashflow, queries.cash_flow)
         
-def spreadsheet_reset():
+def master_reset():
     sheet_global.clear()
     gd.set_with_dataframe(sheet_global, global_final)
+    sheet_cashflow.clear()
+    gd.set_with_dataframe(sheet_cashflow, queries.cash_flow)
     sheet_nj.clear()
     gd.set_with_dataframe(sheet_nj, sbc1_final)
     sheet_ca.clear()
@@ -421,4 +426,4 @@ def reset_global():
     sheet_cashflow.clear()
     gd.set_with_dataframe(sheet_cashflow, queries.cash_flow)
 
-reset_global()
+master_reset()
