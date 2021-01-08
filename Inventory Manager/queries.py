@@ -153,6 +153,15 @@ sf_ar_after_cq = sf.query('''SELECT Account__c, DBA__c, Balance__c, Due_Date__c,
                     AND Due_Date__c > THIS_QUARTER ''')
 
 
+# active purchase orders to combine into cash flow
+
+sf_po = sf.query('''SELECT Account__c, PO_Number__c, Total_Price__c, Amount_Paid__c, Currency__c, Current_Rate__c,
+                Payment_Date__c
+                FROM Purchase_Order_Line__c
+                WHERE PO_Status__c = 'O'
+                AND Total_Price__c > 0''')
+
+
 # cs sold t-x global, formatting SOQL queries into dataframes
 
 this_month = pd.DataFrame(sf_this_month['records']).iloc[:, 1:]
@@ -235,6 +244,14 @@ rename_cols_ap = {'Account__c':'Account', 'Amount_Paid__c':'Amount Paid', 'Doc_C
 ap = ap.rename(columns=rename_cols_ap)
 
 
+po = pd.DataFrame(sf_po['records']).iloc[:, 1:]
+
+rename_cols_po = {'Account__c':'Account', 'Amount_Paid__c':'Amount Paid', 'PO_Number__c':'PO Number',
+                    'Total_Price__c':'Total', 'Currency__c':'Doc Currency', 'Current_Rate__c':'Doc Rate',
+                    'Payment_Date__c':'Due Date'}
+
+po = po.rename(columns=rename_cols_po)
+
 # accounts receivable df
 
 sf_ar_cq = pd.DataFrame(sf_ar_cq['records']).iloc[:, 1:]
@@ -252,7 +269,9 @@ ar = ar.rename(columns=rename_cols_ar)
 # joining AP and AR dataframes
 
 ap = payables(ap).monthly()
-ap['Type'] = 'Accounts Payable'
+ap.insert(loc=0, column='Type', value='Accounts Payable')
+po = payables(po).monthly()
+po.insert(loc=0, column='Type', value='Purchase Order')
 ar = receivables(ar).monthly()
-ar['Type'] = 'Accounts Receivable'
-cash_flow = pd.concat([ap,ar])
+ar.insert(loc=0, column='Type', value='Accounts Receivable')
+cash_flow = pd.concat([ar, ap, po])
