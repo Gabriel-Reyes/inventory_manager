@@ -162,6 +162,19 @@ sf_po = sf.query('''SELECT Account__c, PO_Number__c, Total_Price__c, Amount_Paid
                 AND Total_Price__c > 0''')
 
 
+# list of most recent payment terms, grouped by brand (2000 row limit)
+
+sf_terms = sf.query('''SELECT Family__c, Terms__c
+                    FROM Purchase_Order_Line__c
+                    WHERE Active_Product__c = True
+                    AND Whs_Code__c != 'DSW1'
+                    AND PO_Status__c != 'C'
+                    AND Total_Price__c > 0
+                    AND Terms__c != '_Refer To Remarks Feild'
+                    ORDER BY PO_Number__c DESC
+                    ''')
+
+
 # cs sold t-x global, formatting SOQL queries into dataframes
 
 this_month = pd.DataFrame(sf_this_month['records']).iloc[:, 1:]
@@ -230,6 +243,17 @@ rename_cols_base = {'Product_Family__c':'Product Family', 'Current_Vintage__c':'
 'Cases__c':'Cases on Next Drop', 'Next_Drop_Date__c':'Next Drop Date'}
 
 base_table = base_table.rename(columns=rename_cols_base)
+
+
+# formatting terms df, joining to base table
+
+terms = pd.DataFrame(sf_terms['records']).iloc[:, 1:]
+
+rename_cols_terms = {'Family__c':'Product Family', 'Terms__c':'Terms',}
+
+terms = terms.rename(columns=rename_cols_terms)
+
+terms = terms.drop_duplicates()
 
 
 # accounts payable df

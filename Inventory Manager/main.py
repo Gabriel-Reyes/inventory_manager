@@ -314,7 +314,7 @@ vaw1_pred = vaw1_master.join(depletion_estimator_6mons(vaw1_master))
 
 
 # add future cases on hand estimators for upcoming months
-global_oh = global_pred.join(cases_oh_estimator_mains(global_pred, 'Total Cases OH', 'Next Drop Date', 'Cases on Next Drop'))
+global_oh = global_pred.join(cases_oh_estimator_mains(global_pred, 'Total Cases OH', 'Next Drop Date', 'Cases on Next Drop')).merge(queries.terms, how='left', on='Product Family')
 sbc1_oh = sbc1_pred.join(cases_oh_estimator_mains(sbc1_pred, 'NJ Cases OH', 'Next Drop Date', 'Cases on Next Drop'))
 caw1_oh = caw1_pred.join(cases_oh_estimator_secondary(caw1_pred, 'CA Cases OH'))
 ill1_oh = ill1_pred.join(cases_oh_estimator_secondary(ill1_pred, 'IL Cases OH'))
@@ -327,7 +327,7 @@ global_cols = ['ProductCode', 'Description', 'Current Vintage', 'Country', 'Size
 'Cases Sold: T-60:30', 'Cases Sold: T-30', 'Cases Sold: T-7', 'Cases Sold This Month', 'Trailing 3 Months YoY Trend', '30 Day Trend', '7 Day Trend', 'Months Inv OH',
 'Current Month Forecast', ('forecast:', month_namer(1)), ('forecast:', month_namer(2)), ('forecast:', month_namer(3)),
 ('Estimated Cases OH', month_namer(1)), ('Estimated Cases OH', month_namer(2)), ('Estimated Cases OH', month_namer(3)),
-('Estimated Cases OH', month_namer(4))]
+('Estimated Cases OH', month_namer(4)), 'Terms']
 
 sbc1_cols = ['ProductCode', 'Description', 'Current Vintage', 'Country', 'Size', 'Bottles/Case', 'Item Cost NJ',
 'NJ Cases OH', 'NJ Cases Committed', 'NJ Inv Value', 'NJ Cases on Order', 'Next Drop Date', month_sbtrkt(-13),

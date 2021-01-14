@@ -33,7 +33,7 @@ class cash_flow:
 class payables(cash_flow):
     def __init__(self, data):
         super().__init__(data)
-        fx_eur_usd = 1.20
+        fx_eur_usd = 1.22
         self.df['Balance'] = np.where(self.df['Doc Currency'] == '$', self.df['Total'] - self.df['Amount Paid'],
                                     ((self.df['Total'] - self.df['Amount Paid'])/self.df['Doc Rate']) * fx_eur_usd).round(2)
 
